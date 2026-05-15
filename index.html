@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camp Elective Sorter</title>
+    <meta name="description" content="A visual tool for sorting campers into electives.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="app-header">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <h1>Camp Elective Sorter</h1>
+            <button id="guide-btn" class="btn-icon" style="background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; font-weight: bold; font-size: 1.1rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="Quick Start Guide">?</button>
+        </div>
+        <div class="header-controls">
+            <div class="file-upload">
+                <label for="electives-csv" class="btn">Upload Electives CSV</label>
+                <input type="file" id="electives-csv" accept=".csv" />
+                <span id="electives-status" class="status-badge">Waiting</span>
+            </div>
+            <div class="file-upload">
+                <label for="campers-csv" class="btn">Upload Campers CSV</label>
+                <input type="file" id="campers-csv" accept=".csv" />
+                <span id="campers-status" class="status-badge">Waiting</span>
+            </div>
+            <button id="export-btn" class="btn btn-primary" disabled>Export Schedule</button>
+            <button id="auto-assign-btn" class="btn" style="background-color: #f59e0b; color: white;" disabled>Auto-Assign</button>
+        </div>
+    </header>
+
+    <div id="warnings-container" style="padding: 1rem 2rem; background-color: #fef2f2; color: #991b1b; border-bottom: 1px solid #fecaca; display: none;">
+        <strong>Warnings:</strong>
+        <ul id="warnings-list" style="margin-top: 0.5rem; margin-left: 1.5rem; font-size: 0.875rem;"></ul>
+    </div>
+
+    <main class="app-main">
+        <!-- Left Panel: Camper Table -->
+        <section class="camper-panel">
+            <div class="panel-header">
+                <h2>Camper Roster</h2>
+                <input type="text" id="camper-search" placeholder="Search by ID or Choice...">
+            </div>
+            <div class="table-container">
+                <table id="camper-table">
+                    <thead id="camper-thead">
+                        <!-- Headers injected dynamically -->
+                    </thead>
+                    <tbody id="camper-tbody">
+                        <!-- Camper rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Right Panel: Electives Chart -->
+        <section class="electives-panel">
+            <div class="panel-header">
+                <h2>Electives Chart</h2>
+            </div>
+            <div class="kanban-board" id="kanban-board">
+                <!-- Columns injected dynamically -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Expanded View Modal -->
+    <div id="elective-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Elective Name - Period 1</h2>
+                <button id="close-modal" class="btn-icon">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Capacity: <span id="modal-capacity">0/12</span></p>
+                <div id="modal-resources" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; font-size: 0.875rem;"></div>
+                <div id="modal-notes" style="margin-bottom: 1rem; font-size: 0.875rem; color: #475569; font-style: italic;"></div>
+                <div class="modal-section">Current Roster</div>
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>Camper ID</th>
+                            <th>Choice Rank</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-campers-tbody">
+                        <!-- Assigned Campers injected here -->
+                    </tbody>
+                </table>
+
+                <div class="modal-section" id="unassigned-header">Unassigned Campers</div>
+                <div id="unassigned-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camper Expanded View Modal -->
+    <div id="camper-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="camper-modal-title">Camper Name</h2>
+                <button id="close-camper-modal" class="btn-icon">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="camper-modal-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
+                    <!-- Details injected here -->
+                </div>
+                <div class="modal-section">Current Assignments</div>
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Elective</th>
+                            <th>Choice Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody id="camper-modal-assignments">
+                        <!-- Assignments injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Start Guide Modal -->
+    <div id="guide-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Quick Start Guide</h2>
+                <button id="close-guide-modal" class="btn-icon">&times;</button>
+            </div>
+            <div class="modal-body" style="font-size: 0.95rem; color: #334155; line-height: 1.5;">
+                <h3 style="margin-bottom: 0.5rem; color: #0f172a;">1. Import Templates</h3>
+                <p style="margin-bottom: 1rem;">Download the templates below to see the exact column headers the application expects. Make sure not to change the structural header names.</p>
+                <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                    <button id="dl-electives-template" class="btn" style="background: #e2e8f0; color: #0f172a; border-color: #cbd5e1;">Download Electives Template</button>
+                    <button id="dl-campers-template" class="btn" style="background: #e2e8f0; color: #0f172a; border-color: #cbd5e1;">Download Campers Template</button>
+                </div>
+                
+                <h3 style="margin-bottom: 0.5rem; color: #0f172a;">2. Manual Controls</h3>
+                <ul style="margin-bottom: 2rem; margin-left: 1.5rem;">
+                    <li style="margin-bottom: 0.25rem;"><strong>Spawn Electives:</strong> Drag an elective from the "Available" column into a Period to spawn a class.</li>
+                    <li style="margin-bottom: 0.25rem;"><strong>Assign Campers:</strong> Drag campers from the left roster onto an elective card to assign them.</li>
+                    <li><strong>Remove Instances:</strong> Drag an active elective card back into the "Available" column to delete it and unassign its campers.</li>
+                </ul>
+
+                <h3 style="margin-bottom: 0.5rem; color: #0f172a;">3. Auto-Assign Engine</h3>
+                <p>Click the <strong>Auto-Assign</strong> button to instantly generate a schedule and assign campers. The algorithm automatically respects capacities, minimum periods, and camper choices.</p>
+                <div style="background: #fef9c3; padding: 0.75rem; border-left: 4px solid #eab308; margin-top: 1rem;">
+                    <strong>Pro Tip:</strong> Any campers you manually assign <em>before</em> clicking Auto-Assign will be locked into place and the algorithm will build around them!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Hub Modal -->
+    <div id="export-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Export Hub</h2>
+                <button id="close-export-modal" class="btn-icon">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
+                <button id="dl-export-camper" class="btn" style="background: #3b82f6; color: white; padding: 1rem; font-size: 1rem;">Download Camper Master List</button>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: -0.5rem; margin-bottom: 0.5rem;">One row per camper showing all their assignments across periods.</p>
+
+                <button id="dl-export-instructor" class="btn" style="background: #10b981; color: white; padding: 1rem; font-size: 1rem;">Print Instructor Rosters (PDF)</button>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: -0.5rem; margin-bottom: 0.5rem;">One printable page per elective showing all attendance periods.</p>
+
+                <button id="dl-export-schedule" class="btn" style="background: #8b5cf6; color: white; padding: 1rem; font-size: 1rem;">Download Logistics Schedule (CSV)</button>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: -0.5rem; margin-bottom: 0.5rem;">A flat data table with all metrics. Perfect for campus management in Excel.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
