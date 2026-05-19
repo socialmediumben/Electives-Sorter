@@ -9,6 +9,11 @@ let campersData = []; // { id, firstName, lastName, ... choices: [], assigned: {
 let dynamicPeriods = []; 
 let dynamicChoiceCols = [];
 
+// Edit State
+let currentEditingCamper = null;
+let currentEditingElectiveName = null;
+let currentEditingInstance = null;
+
 // DOM Elements
 const projectJsonInput = document.getElementById('project-json');
 const projectStatus = document.getElementById('project-status');
@@ -56,6 +61,35 @@ const dlExportCamper = document.getElementById('dl-export-camper');
 const dlExportInstructor = document.getElementById('dl-export-instructor');
 const dlExportSchedule = document.getElementById('dl-export-schedule');
 
+// Elective Edit elements
+const editElectiveBtn = document.getElementById('edit-elective-btn');
+const electiveViewContainer = document.getElementById('elective-view-container');
+const electiveEditContainer = document.getElementById('elective-edit-container');
+const editElMaxC = document.getElementById('edit-el-max-c');
+const editElMinC = document.getElementById('edit-el-min-c');
+const editElGroupSize = document.getElementById('edit-el-group-size');
+const editElMergeTarget = document.getElementById('edit-el-merge-target');
+const editElInstructor = document.getElementById('edit-el-instructor');
+const editElLocation = document.getElementById('edit-el-location');
+const editElSupplies = document.getElementById('edit-el-supplies');
+const editElNotes = document.getElementById('edit-el-notes');
+const editElPeriodsContainer = document.getElementById('edit-el-periods-container');
+const cancelElEditBtn = document.getElementById('cancel-el-edit-btn');
+const saveElEditBtn = document.getElementById('save-el-edit-btn');
+
+// Camper Edit elements
+const editCamperBtn = document.getElementById('edit-camper-btn');
+const camperViewContainer = document.getElementById('camper-view-container');
+const camperEditContainer = document.getElementById('camper-edit-container');
+const editCamperFirst = document.getElementById('edit-camper-first');
+const editCamperLast = document.getElementById('edit-camper-last');
+const editCamperEmail = document.getElementById('edit-camper-email');
+const editCamperOrg = document.getElementById('edit-camper-org');
+const editCamperNotes = document.getElementById('edit-camper-notes');
+const editCamperChoicesContainer = document.getElementById('edit-camper-choices-container');
+const cancelCamperEditBtn = document.getElementById('cancel-camper-edit-btn');
+const saveCamperEditBtn = document.getElementById('save-camper-edit-btn');
+
 // Drag State
 let draggedItem = null; 
 let draggedType = null; 
@@ -76,6 +110,14 @@ function init() {
     dlExportCamper.addEventListener('click', exportCamperCSV);
     dlExportInstructor.addEventListener('click', printInstructorRosters);
     dlExportSchedule.addEventListener('click', exportScheduleCSV);
+    
+    editElectiveBtn.addEventListener('click', toggleElectiveEditMode);
+    cancelElEditBtn.addEventListener('click', () => showElectiveViewMode());
+    saveElEditBtn.addEventListener('click', saveElectiveEdits);
+
+    editCamperBtn.addEventListener('click', toggleCamperEditMode);
+    cancelCamperEditBtn.addEventListener('click', () => showCamperViewMode());
+    saveCamperEditBtn.addEventListener('click', saveCamperEdits);
     
     autoAssignBtn.addEventListener('click', () => {
         autoAssignBtn.disabled = true;
@@ -1241,7 +1283,127 @@ function unassignCamper(camperId, instId) {
 }
 
 // Modals
+function showElectiveViewMode() {
+    electiveViewContainer.classList.remove('hidden');
+    electiveEditContainer.classList.add('hidden');
+    editElectiveBtn.textContent = "Edit Config";
+    editElectiveBtn.style.background = "#0ea5e9";
+}
+
+function toggleElectiveEditMode() {
+    if (electiveEditContainer.classList.contains('hidden')) {
+        const elective = electivesMap.get(currentEditingElectiveName);
+        if (!elective) return;
+
+        editElMaxC.value = elective.maxC;
+        editElMinC.value = elective.minC;
+        editElGroupSize.value = elective.groupSize;
+        editElInstructor.value = elective.resources['Instructor'] || '';
+        editElLocation.value = elective.resources['Location'] || '';
+        editElSupplies.value = elective.resources['Supplies'] || '';
+        editElNotes.value = elective.notes || '';
+
+        editElMergeTarget.innerHTML = '<option value="">None</option>';
+        electivesMap.forEach((el, name) => {
+            if (name !== currentEditingElectiveName) {
+                const selected = elective.mergeTarget === name ? 'selected' : '';
+                editElMergeTarget.innerHTML += `<option value="${name}" ${selected}>${name}</option>`;
+            }
+        });
+
+        editElPeriodsContainer.innerHTML = '';
+        dynamicPeriods.forEach(p => {
+            const checked = elective.availabilities[p.pName] ? 'checked' : '';
+            editElPeriodsContainer.innerHTML += `
+                <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.875rem;">
+                    <input type="checkbox" data-period="${p.pName}" ${checked} />
+                    ${p.pName}
+                </label>
+            `;
+        });
+
+        electiveViewContainer.classList.add('hidden');
+        electiveEditContainer.classList.remove('hidden');
+        editElectiveBtn.textContent = "View Config";
+        editElectiveBtn.style.background = "#64748b";
+    } else {
+        showElectiveViewMode();
+    }
+}
+
+function saveElectiveEdits() {
+    const elective = electivesMap.get(currentEditingElectiveName);
+    if (!elective) return;
+
+    const newMaxC = parseInt(editElMaxC.value) || 99;
+    const newMinC = parseInt(editElMinC.value) || 0;
+    const newGroupSize = parseInt(editElGroupSize.value) || 1;
+    const newMergeTarget = editElMergeTarget.value;
+    const newInstructor = editElInstructor.value.trim();
+    const newLocation = editElLocation.value.trim();
+    const newSupplies = editElSupplies.value.trim();
+    const newNotes = editElNotes.value.trim();
+
+    const checkboxes = editElPeriodsContainer.querySelectorAll('input[type="checkbox"]');
+    const newAvailabilities = {};
+    let periodsDeactivated = [];
+
+    checkboxes.forEach(cb => {
+        const pName = cb.dataset.period;
+        const isChecked = cb.checked;
+        newAvailabilities[pName] = isChecked;
+
+        if (elective.availabilities[pName] && !isChecked) {
+            periodsDeactivated.push(pName);
+        }
+    });
+
+    if (periodsDeactivated.length > 0) {
+        const activeInstancesToClear = instances.filter(i => !i.isStaging && i.name === currentEditingElectiveName && periodsDeactivated.includes(i.period));
+        if (activeInstancesToClear.length > 0) {
+            const confirmMsg = `Warning: Changing availability will deactivate this elective for periods: ${periodsDeactivated.join(', ')}.\n` +
+                               `Currently active classes in those periods (and their camper assignments) will be deleted.\n\n` +
+                               `Do you want to proceed?`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            activeInstancesToClear.forEach(inst => {
+                instances = instances.filter(i => i.id !== inst.id);
+                inst.campers.forEach(cId => {
+                    const camper = campersData.find(c => c.id === cId);
+                    if (camper) camper.assigned[inst.period] = null;
+                });
+            });
+        }
+    }
+
+    elective.maxC = newMaxC;
+    elective.minC = newMinC;
+    elective.groupSize = newGroupSize;
+    elective.mergeTarget = newMergeTarget;
+    elective.notes = newNotes;
+
+    elective.resources = {};
+    if (newSupplies) elective.resources['Supplies'] = newSupplies;
+    if (newLocation) elective.resources['Location'] = newLocation;
+    if (newInstructor) elective.resources['Instructor'] = newInstructor;
+
+    elective.availabilities = newAvailabilities;
+
+    alert("Elective configuration saved!");
+    showElectiveViewMode();
+    
+    openModal(currentEditingInstance);
+    renderElectives();
+    renderCampers();
+}
+
 function openModal(inst) {
+    currentEditingInstance = inst;
+    currentEditingElectiveName = inst.name;
+    showElectiveViewMode();
+
     const elective = electivesMap.get(inst.name);
     
     let displayCapacity = elective.maxC;
@@ -1372,7 +1534,91 @@ function openModal(inst) {
     modal.classList.remove('hidden');
 }
 
+function showCamperViewMode() {
+    camperViewContainer.classList.remove('hidden');
+    camperEditContainer.classList.add('hidden');
+    editCamperBtn.textContent = "Edit Camper";
+    editCamperBtn.style.background = "#0ea5e9";
+}
+
+function toggleCamperEditMode() {
+    if (camperEditContainer.classList.contains('hidden')) {
+        if (!currentEditingCamper) return;
+
+        editCamperFirst.value = currentEditingCamper.firstName;
+        editCamperLast.value = currentEditingCamper.lastName;
+        editCamperEmail.value = currentEditingCamper.email || '';
+        editCamperOrg.value = currentEditingCamper.organization || '';
+        editCamperNotes.value = currentEditingCamper.notes || '';
+
+        editCamperChoicesContainer.innerHTML = '';
+        const electiveNames = Array.from(electivesMap.keys()).sort();
+
+        const choiceCount = Math.max(dynamicChoiceCols.length, currentEditingCamper.choices.length);
+        for (let i = 0; i < choiceCount; i++) {
+            const currentChoiceVal = currentEditingCamper.choices[i] || '';
+            
+            let optionsHtml = `<option value="">None</option>`;
+            electiveNames.forEach(elName => {
+                const selected = elName === currentChoiceVal ? 'selected' : '';
+                optionsHtml += `<option value="${elName}" ${selected}>${elName}</option>`;
+            });
+
+            editCamperChoicesContainer.innerHTML += `
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 0.85rem; font-weight: 600; width: 80px;">Choice ${i+1}:</span>
+                    <select class="camper-choice-select" style="flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
+                        ${optionsHtml}
+                    </select>
+                </div>
+            `;
+        }
+
+        camperViewContainer.classList.add('hidden');
+        camperEditContainer.classList.remove('hidden');
+        editCamperBtn.textContent = "View Camper";
+        editCamperBtn.style.background = "#64748b";
+    } else {
+        showCamperViewMode();
+    }
+}
+
+function saveCamperEdits() {
+    if (!currentEditingCamper) return;
+
+    const newFirst = editCamperFirst.value.trim();
+    const newLast = editCamperLast.value.trim();
+    const newEmail = editCamperEmail.value.trim();
+    const newOrg = editCamperOrg.value.trim();
+    const newNotes = editCamperNotes.value.trim();
+
+    const dropdowns = editCamperChoicesContainer.querySelectorAll('.camper-choice-select');
+    const newChoices = [];
+    dropdowns.forEach(select => {
+        if (select.value) {
+            newChoices.push(select.value);
+        }
+    });
+
+    currentEditingCamper.firstName = newFirst;
+    currentEditingCamper.lastName = newLast;
+    currentEditingCamper.email = newEmail;
+    currentEditingCamper.organization = newOrg;
+    currentEditingCamper.notes = newNotes;
+    currentEditingCamper.choices = newChoices;
+
+    alert("Camper details saved!");
+    showCamperViewMode();
+    
+    openCamperModal(currentEditingCamper);
+    renderCampers();
+    renderElectives();
+}
+
 function openCamperModal(camper) {
+    currentEditingCamper = camper;
+    showCamperViewMode();
+
     const title = document.getElementById('camper-modal-title');
     title.textContent = `${camper.firstName} ${camper.lastName}`.trim() || `Camper ${camper.id}`;
 

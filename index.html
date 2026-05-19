@@ -74,59 +74,156 @@
 
     <!-- Expanded View Modal -->
     <div id="elective-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title">Elective Name - Period 1</h2>
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <h2 id="modal-title" style="margin: 0;">Elective Name - Period 1</h2>
+                    <button id="edit-elective-btn" class="btn" style="background: #0ea5e9; color: white; padding: 0.25rem 0.75rem; font-size: 0.85rem; border: none; border-radius: 4px; cursor: pointer;">Edit Config</button>
+                </div>
                 <button id="close-modal" class="btn-icon">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Capacity: <span id="modal-capacity">0/12</span></p>
-                <div id="modal-resources" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; font-size: 0.875rem;"></div>
-                <div id="modal-notes" style="margin-bottom: 1rem; font-size: 0.875rem; color: #475569; font-style: italic;"></div>
-                <div class="modal-section">Current Roster</div>
-                <table class="modal-table">
-                    <thead>
-                        <tr>
-                            <th>Camper ID</th>
-                            <th>Choice Rank</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modal-campers-tbody">
-                        <!-- Assigned Campers injected here -->
-                    </tbody>
-                </table>
+                <!-- View Mode Container -->
+                <div id="elective-view-container">
+                    <p>Capacity: <span id="modal-capacity">0/12</span></p>
+                    <div id="modal-resources" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; font-size: 0.875rem;"></div>
+                    <div id="modal-notes" style="margin-bottom: 1rem; font-size: 0.875rem; color: #475569; font-style: italic;"></div>
+                    
+                    <div class="modal-section">Current Roster</div>
+                    <table class="modal-table">
+                        <thead>
+                            <tr>
+                                <th>Camper ID</th>
+                                <th>Choice Rank</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-campers-tbody">
+                            <!-- Assigned Campers injected here -->
+                        </tbody>
+                    </table>
 
-                <div class="modal-section" id="unassigned-header">Unassigned Campers</div>
-                <div id="unassigned-container"></div>
+                    <div class="modal-section" id="unassigned-header">Unassigned Campers</div>
+                    <div id="unassigned-container"></div>
+                </div>
+
+                <!-- Edit Mode Container -->
+                <div id="elective-edit-container" class="hidden" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <h3 style="margin-top: 0;">Edit Global Elective Config</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Maximum Capacity</label>
+                            <input type="number" id="edit-el-max-c" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Minimum Capacity</label>
+                            <input type="number" id="edit-el-min-c" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Group Size</label>
+                            <input type="number" id="edit-el-group-size" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Merge Target</label>
+                            <select id="edit-el-merge-target" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;"></select>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Instructor</label>
+                            <input type="text" id="edit-el-instructor" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Location</label>
+                            <input type="text" id="edit-el-location" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Supplies</label>
+                            <input type="text" id="edit-el-supplies" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Notes</label>
+                        <textarea id="edit-el-notes" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; height: 60px; font-family: inherit;"></textarea>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Period Availabilities</label>
+                        <div id="edit-el-periods-container" style="display: flex; gap: 1rem; flex-wrap: wrap;"></div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
+                        <button id="cancel-el-edit-btn" class="btn" style="background: #e2e8f0; color: #0f172a;">Cancel</button>
+                        <button id="save-el-edit-btn" class="btn btn-primary">Save Configuration</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Camper Expanded View Modal -->
     <div id="camper-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="camper-modal-title">Camper Name</h2>
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <h2 id="camper-modal-title" style="margin: 0;">Camper Name</h2>
+                    <button id="edit-camper-btn" class="btn" style="background: #0ea5e9; color: white; padding: 0.25rem 0.75rem; font-size: 0.85rem; border: none; border-radius: 4px; cursor: pointer;">Edit Camper</button>
+                </div>
                 <button id="close-camper-modal" class="btn-icon">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="camper-modal-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
-                    <!-- Details injected here -->
+                <!-- View Mode Container -->
+                <div id="camper-view-container">
+                    <div id="camper-modal-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
+                        <!-- Details injected here -->
+                    </div>
+                    <div class="modal-section">Current Assignments</div>
+                    <table class="modal-table">
+                        <thead>
+                            <tr>
+                                <th>Period</th>
+                                <th>Elective</th>
+                                <th>Choice Rank</th>
+                            </tr>
+                        </thead>
+                        <tbody id="camper-modal-assignments">
+                            <!-- Assignments injected here -->
+                        </tbody>
+                    </table>
                 </div>
-                <div class="modal-section">Current Assignments</div>
-                <table class="modal-table">
-                    <thead>
-                        <tr>
-                            <th>Period</th>
-                            <th>Elective</th>
-                            <th>Choice Rank</th>
-                        </tr>
-                    </thead>
-                    <tbody id="camper-modal-assignments">
-                        <!-- Assignments injected here -->
-                    </tbody>
-                </table>
+
+                <!-- Edit Mode Container -->
+                <div id="camper-edit-container" class="hidden" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <h3 style="margin-top: 0;">Edit Camper Details</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">First Name</label>
+                            <input type="text" id="edit-camper-first" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Last Name</label>
+                            <input type="text" id="edit-camper-last" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Email</label>
+                            <input type="email" id="edit-camper-email" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Organization</label>
+                            <input type="text" id="edit-camper-org" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Notes / Allergies</label>
+                        <textarea id="edit-camper-notes" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; height: 60px; font-family: inherit;"></textarea>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.5rem;">Edit Choice Ranking</label>
+                        <div id="edit-camper-choices-container" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
+                        <button id="cancel-camper-edit-btn" class="btn" style="background: #e2e8f0; color: #0f172a;">Cancel</button>
+                        <button id="save-camper-edit-btn" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
