@@ -573,17 +573,7 @@ function generateRandomSchedule(lockedInstances, lockedCamperAssignments) {
             }
 
             if (!assigned) {
-                 const fallbackInsts = shuffleArray(scheduleInstances.filter(inst => inst.period === period));
-                 for(let inst of fallbackInsts) {
-                     const elective = electivesMap.get(inst.name);
-                     const alreadyInElective = dynamicPeriods.some(otherP => camperState[camper.id][otherP.pName] === inst.name);
-                     if (!alreadyInElective && inst.campers.length < elective.maxC) {
-                         inst.campers.push(camper.id);
-                         camperState[camper.id][period] = inst.name;
-                         assigned = true;
-                         break;
-                     }
-                 }
+                // Keep camper unassigned if they cannot get their choices
             }
         });
     });
@@ -781,6 +771,8 @@ function generateRandomSchedule(lockedInstances, lockedCamperAssignments) {
             const assignedName = camperState[c.id][p.pName];
             if (!assignedName) {
                 score += 1000; 
+                const fullName = `${c.firstName} ${c.lastName}`.trim() || c.id;
+                warnings.push(`Could not assign Camper ${fullName} (${c.id}) in ${p.pName} to any of their chosen electives.`);
             } else {
                 const choiceIdx = c.choices.indexOf(assignedName);
                 if (choiceIdx !== -1) {
