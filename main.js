@@ -10,6 +10,8 @@ let dynamicPeriods = [];
 let dynamicChoiceCols = [];
 
 // DOM Elements
+const projectJsonInput = document.getElementById('project-json');
+const projectStatus = document.getElementById('project-status');
 const elCsvInput = document.getElementById('electives-csv');
 const camperCsvInput = document.getElementById('campers-csv');
 const elStatus = document.getElementById('electives-status');
@@ -49,6 +51,7 @@ const dlCampersBtn = document.getElementById('dl-campers-template');
 // Export Hub Modal
 const exportModal = document.getElementById('export-modal');
 const closeExportModalBtn = document.getElementById('close-export-modal');
+const dlSaveProject = document.getElementById('dl-save-project');
 const dlExportCamper = document.getElementById('dl-export-camper');
 const dlExportInstructor = document.getElementById('dl-export-instructor');
 const dlExportSchedule = document.getElementById('dl-export-schedule');
@@ -63,11 +66,13 @@ let sortAsc = true;
 
 // Initialization
 function init() {
+    projectJsonInput.addEventListener('change', handleProjectUpload);
     elCsvInput.addEventListener('change', handleElectiveUpload);
     camperCsvInput.addEventListener('change', handleCamperUpload);
     
     exportBtn.addEventListener('click', () => exportModal.classList.remove('hidden'));
     closeExportModalBtn.addEventListener('click', () => exportModal.classList.add('hidden'));
+    dlSaveProject.addEventListener('click', saveProjectFile);
     dlExportCamper.addEventListener('click', exportCamperCSV);
     dlExportInstructor.addEventListener('click', printInstructorRosters);
     dlExportSchedule.addEventListener('click', exportScheduleCSV);
@@ -1612,6 +1617,83 @@ function exportScheduleCSV() {
     }
 
     downloadCSV(Papa.unparse(rows), "logistics_schedule.csv");
+}
+
+function saveProjectFile() {
+    const electivesArray = Array.from(electivesMap.entries());
+
+    const projectData = {
+        version: "1.0",
+        rawElectives: rawElectives,
+        rawCampers: rawCampers,
+        instances: instances,
+        campersData: campersData,
+        electivesMap: electivesArray,
+        dynamicPeriods: dynamicPeriods,
+        dynamicChoiceCols: dynamicChoiceCols
+    };
+
+    const jsonString = JSON.stringify(projectData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "camp_sorting_project.json");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function handleProjectUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        try {
+            const projectData = JSON.parse(event.target.result);
+
+            if (!projectData.rawElectives || !projectData.rawCampers || !projectData.instances || !projectData.campersData) {
+                alert("Invalid project file structure.");
+                return;
+            }
+
+            rawElectives = projectData.rawElectives || [];
+            rawCampers = projectData.rawCampers || [];
+            instances = projectData.instances || [];
+            campersData = projectData.campersData || [];
+            dynamicPeriods = projectData.dynamicPeriods || [];
+            dynamicChoiceCols = projectData.dynamicChoiceCols || [];
+
+            electivesMap.clear();
+            if (Array.isArray(projectData.electivesMap)) {
+                projectData.electivesMap.forEach(([key, value]) => {
+                    electivesMap.set(key, value);
+                });
+            }
+
+            buildKanbanBoard();
+            renderElectives();
+            renderCampers();
+
+            exportBtn.disabled = false;
+            autoAssignBtn.disabled = false;
+
+            elStatus.textContent = 'Loaded (Project)';
+            elStatus.className = 'status-badge success';
+            camperStatus.textContent = 'Loaded (Project)';
+            camperStatus.className = 'status-badge success';
+            projectStatus.textContent = 'Loaded';
+            projectStatus.className = 'status-badge success';
+
+            alert("Project loaded successfully!");
+        } catch (err) {
+            console.error(err);
+            alert("Error parsing project file: " + err.message);
+        }
+    };
+    reader.readAsText(file);
 }
 
 // Run init
