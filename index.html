@@ -44,10 +44,13 @@
 
     <main class="app-main">
         <!-- Left Panel: Camper Table -->
-        <section class="camper-panel">
+        <section class="camper-panel" id="camper-panel">
             <div class="panel-header">
                 <h2>Camper Roster</h2>
-                <input type="text" id="camper-search" placeholder="Search by ID or Choice...">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="text" id="camper-search" placeholder="Search by ID or Choice...">
+                    <button id="toggle-camper-panel" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Collapse Panel">◂</button>
+                </div>
             </div>
             <div class="table-container">
                 <table id="camper-table">
@@ -62,9 +65,10 @@
         </section>
 
         <!-- Right Panel: Electives Chart -->
-        <section class="electives-panel">
+        <section class="electives-panel" id="electives-panel">
             <div class="panel-header">
                 <h2>Electives Chart</h2>
+                <button id="toggle-electives-panel" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Collapse Panel">▸</button>
             </div>
             <div class="kanban-board" id="kanban-board">
                 <!-- Columns injected dynamically -->

@@ -491,3 +491,82 @@ body {
 .btn-add:hover {
     background-color: #a7f3d0;
 }
+
+/* Collapsible Panels */
+.camper-panel {
+    transition: width 0.3s ease, min-width 0.3s ease, padding 0.3s ease;
+}
+
+.camper-panel.collapsed {
+    width: 60px !important;
+    min-width: 60px !important;
+    padding: 1rem 0.25rem !important;
+    overflow: hidden;
+}
+
+.camper-panel.collapsed .panel-header {
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 2rem;
+    height: 100%;
+    margin-bottom: 0;
+}
+
+.camper-panel.collapsed .panel-header h2 {
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+.camper-panel.collapsed .table-container {
+    display: none;
+}
+
+.camper-panel.collapsed #camper-search {
+    display: none;
+}
+
+.electives-panel {
+    transition: flex 0.3s ease, min-width 0.3s ease, padding 0.3s ease, width 0.3s ease;
+}
+
+.electives-panel.collapsed {
+    flex: 0 0 60px !important;
+    width: 60px !important;
+    min-width: 60px !important;
+    padding: 1rem 0.25rem !important;
+    background-color: var(--surface-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.electives-panel.collapsed .panel-header {
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 2rem;
+    height: 100%;
+    margin-bottom: 0;
+}
+
+.electives-panel.collapsed .panel-header h2 {
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+.electives-panel.collapsed .kanban-board {
+    display: none;
+}
+
+.app-main:has(.electives-panel.collapsed) .camper-panel {
+    flex: 1;
+    max-width: none;
+    width: auto;
+}

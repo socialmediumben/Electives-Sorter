@@ -133,6 +133,23 @@ function init() {
     closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
     closeCamperModalBtn.addEventListener('click', () => camperModal.classList.add('hidden'));
     
+    // Collapsible Columns
+    const camperPanel = document.getElementById('camper-panel');
+    const toggleCamperBtn = document.getElementById('toggle-camper-panel');
+    toggleCamperBtn.addEventListener('click', () => {
+        const isCollapsed = camperPanel.classList.toggle('collapsed');
+        toggleCamperBtn.textContent = isCollapsed ? '▸' : '◂';
+        toggleCamperBtn.title = isCollapsed ? "Expand Panel" : "Collapse Panel";
+    });
+
+    const electivesPanel = document.getElementById('electives-panel');
+    const toggleElectivesBtn = document.getElementById('toggle-electives-panel');
+    toggleElectivesBtn.addEventListener('click', () => {
+        const isCollapsed = electivesPanel.classList.toggle('collapsed');
+        toggleElectivesBtn.textContent = isCollapsed ? '◂' : '▸';
+        toggleElectivesBtn.title = isCollapsed ? "Expand Panel" : "Collapse Panel";
+    });
+
     guideBtn.addEventListener('click', () => guideModal.classList.remove('hidden'));
     closeGuideModalBtn.addEventListener('click', () => guideModal.classList.add('hidden'));
     dlElectivesBtn.addEventListener('click', downloadElectivesTemplate);
