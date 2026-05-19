@@ -23,9 +23,27 @@
         </div>
     </header>
 
-    <div id="warnings-container" style="padding: 1rem 2rem; background-color: #fef2f2; color: #991b1b; border-bottom: 1px solid #fecaca; display: none;">
-        <strong>Warnings:</strong>
-        <ul id="warnings-list" style="margin-top: 0.5rem; margin-left: 1.5rem; font-size: 0.875rem;"></ul>
+    <div id="warnings-container" style="padding: 1.5rem 2rem; background-color: #fffbeb; color: #78350f; border-bottom: 1px solid #fde68a; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <h3 style="margin: 0; font-size: 1.1rem; color: #78350f; display: flex; align-items: center; gap: 0.5rem;">
+                ⚠️ Schedule Warnings & Actionable Suggestions
+            </h3>
+            <button onclick="document.getElementById('warnings-container').style.display='none'" style="background: none; border: none; font-size: 1.5rem; color: #78350f; cursor: pointer; font-weight: bold; line-height: 1;">&times;</button>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <!-- Left Side: Warnings -->
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem; color: #991b1b;">
+                <strong style="font-size: 0.95rem; display: block; border-bottom: 1px solid #fecaca; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">Unresolved Schedule Issues</strong>
+                <ul id="warnings-list" style="margin-left: 1.25rem; font-size: 0.85rem; line-height: 1.5;"></ul>
+            </div>
+            
+            <!-- Right Side: Suggestions -->
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 1rem; color: #065f46;">
+                <strong style="font-size: 0.95rem; display: block; border-bottom: 1px solid #a7f3d0; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">System Optimization Recommendations</strong>
+                <ul id="suggestions-list" style="margin-left: 1.25rem; font-size: 0.85rem; line-height: 1.5;"></ul>
+            </div>
+        </div>
     </div>
 
     <main class="app-main">

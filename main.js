@@ -25,6 +25,7 @@ const exportBtn = document.getElementById('export-btn');
 const autoAssignBtn = document.getElementById('auto-assign-btn');
 const warningsContainer = document.getElementById('warnings-container');
 const warningsList = document.getElementById('warnings-list');
+const suggestionsList = document.getElementById('suggestions-list');
 
 const camperSearch = document.getElementById('camper-search');
 const camperThead = document.getElementById('camper-thead');
@@ -844,6 +845,70 @@ function generateRandomSchedule(lockedInstances, lockedCamperAssignments) {
     return { score, instances: scheduleInstances, warnings, camperState };
 }
 
+function generateSuggestions(setup) {
+    const suggestions = [];
+    const notSpawnedStats = {};
+    const fullStats = {};
+
+    campersData.forEach(c => {
+        dynamicPeriods.forEach(p => {
+            const periodName = p.pName;
+            if (c.unavailablePeriods && c.unavailablePeriods.includes(periodName)) return;
+
+            const assignedName = setup.camperState[c.id][periodName];
+            if (!assignedName) {
+                c.choices.forEach(choiceName => {
+                    if (!choiceName) return;
+
+                    const elective = electivesMap.get(choiceName);
+                    if (!elective) return;
+
+                    const matchingInstances = setup.instances.filter(si => si.name === choiceName && si.period === periodName);
+                    if (matchingInstances.length === 0) {
+                        if (!notSpawnedStats[choiceName]) notSpawnedStats[choiceName] = {};
+                        notSpawnedStats[choiceName][periodName] = (notSpawnedStats[choiceName][periodName] || 0) + 1;
+                    } else {
+                        const allFull = matchingInstances.every(si => {
+                            return si.campers.length >= elective.maxC;
+                        });
+                        if (allFull) {
+                            if (!fullStats[choiceName]) fullStats[choiceName] = {};
+                            fullStats[choiceName][periodName] = (fullStats[choiceName][periodName] || 0) + 1;
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    Object.keys(notSpawnedStats).forEach(electiveName => {
+        Object.keys(notSpawnedStats[electiveName]).forEach(periodName => {
+            const count = notSpawnedStats[electiveName][periodName];
+            if (count >= 1) {
+                suggestions.push(`💡 Spawn an instance of <strong>${electiveName}</strong> in <strong>${periodName}</strong> (fits up to ${count} interested camper${count > 1 ? 's' : ''}).`);
+            }
+        });
+    });
+
+    Object.keys(fullStats).forEach(electiveName => {
+        Object.keys(fullStats[electiveName]).forEach(periodName => {
+            const count = fullStats[electiveName][periodName];
+            if (count >= 1) {
+                suggestions.push(`💡 Increase maximum capacity of <strong>${electiveName}</strong> in <strong>${periodName}</strong> by at least ${count} slot${count > 1 ? 's' : ''} to fit interested campers.`);
+            }
+        });
+    });
+
+    setup.instances.forEach(si => {
+        const elective = electivesMap.get(si.name);
+        if (elective && si.campers.length < elective.minC) {
+            suggestions.push(`💡 Decrease minimum capacity constraint for <strong>${si.name}</strong> or reduce its scheduled periods to concentrate camper choices.`);
+        }
+    });
+
+    return [...new Set(suggestions)];
+}
+
 function applySchedule(setup) {
     const staging = instances.filter(i => i.isStaging);
     instances = [...staging];
@@ -889,12 +954,28 @@ function applySchedule(setup) {
     renderCampers();
 
     warningsList.innerHTML = '';
+    suggestionsList.innerHTML = '';
+
     if (setup.warnings.length > 0) {
         setup.warnings.forEach(w => {
             const li = document.createElement('li');
             li.textContent = w;
             warningsList.appendChild(li);
         });
+
+        const suggestions = generateSuggestions(setup);
+        if (suggestions.length > 0) {
+            suggestions.forEach(s => {
+                const li = document.createElement('li');
+                li.innerHTML = s;
+                suggestionsList.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.innerHTML = '<em>No actionable suggestions found. Try tweaking manual class setups.</em>';
+            suggestionsList.appendChild(li);
+        }
+
         warningsContainer.style.display = 'block';
     } else {
         warningsContainer.style.display = 'none';
