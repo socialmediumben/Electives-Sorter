@@ -505,11 +505,12 @@ body {
 }
 
 .camper-panel.collapsed .panel-header {
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: center;
     gap: 2rem;
     height: 100%;
     margin-bottom: 0;
+    justify-content: flex-start;
 }
 
 .camper-panel.collapsed .panel-header h2 {
@@ -519,6 +520,7 @@ body {
     white-space: nowrap;
     font-size: 1rem;
     margin-bottom: 0;
+    margin-top: 1rem;
 }
 
 .camper-panel.collapsed .table-container {
@@ -545,11 +547,12 @@ body {
 }
 
 .electives-panel.collapsed .panel-header {
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: center;
     gap: 2rem;
     height: 100%;
     margin-bottom: 0;
+    justify-content: flex-start;
 }
 
 .electives-panel.collapsed .panel-header h2 {
@@ -559,6 +562,7 @@ body {
     white-space: nowrap;
     font-size: 1rem;
     margin-bottom: 0;
+    margin-top: 1rem;
 }
 
 .electives-panel.collapsed .kanban-board {
