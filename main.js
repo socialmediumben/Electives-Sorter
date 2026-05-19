@@ -424,7 +424,8 @@ function processCampers(data) {
             email: getVal(row, ['email']) || '',
             organization: getVal(row, ['organization']) || '',
             date: getVal(row, ['date']) || '',
-            notes: getVal(row, ['notes']) || ''
+            notes: getVal(row, ['notes']) || '',
+            unavailablePeriods: []
         };
     }).filter(c => c.id);
 
@@ -567,6 +568,7 @@ function generateRandomSchedule(lockedInstances, lockedCamperAssignments) {
     shuffledCampers.forEach(camper => {
         dynamicPeriods.forEach(p => {
             const period = p.pName;
+            if (camper.unavailablePeriods && camper.unavailablePeriods.includes(period)) return;
             if (camperState[camper.id][period]) return; 
 
             let assigned = false;
@@ -785,6 +787,9 @@ function generateRandomSchedule(lockedInstances, lockedCamperAssignments) {
 
     campersData.forEach(c => {
         dynamicPeriods.forEach(p => {
+            if (c.unavailablePeriods && c.unavailablePeriods.includes(p.pName)) {
+                return;
+            }
             const assignedName = camperState[c.id][p.pName];
             if (!assignedName) {
                 score += 1000; 
@@ -1244,6 +1249,11 @@ function assignCamper(camper, inst) {
         return;
     }
 
+    if (!inst.isStaging && camper.unavailablePeriods && camper.unavailablePeriods.includes(period)) {
+        alert(`Camper ${camper.firstName} ${camper.lastName} (${camper.id}) is marked as unavailable during ${period}.`);
+        return;
+    }
+
     if (!inst.isStaging && camper.assigned[period]) {
         alert(`Camper ${camper.id} is already assigned to an elective in ${period}`);
         return;
@@ -1560,6 +1570,20 @@ function toggleCamperEditMode() {
         editCamperOrg.value = currentEditingCamper.organization || '';
         editCamperNotes.value = currentEditingCamper.notes || '';
 
+        // Dynamically build Unavailable Period checkboxes
+        const editCamperUnavailableContainer = document.getElementById('edit-camper-unavailable-container');
+        editCamperUnavailableContainer.innerHTML = '';
+        dynamicPeriods.forEach(p => {
+            const isUnavailable = (currentEditingCamper.unavailablePeriods || []).includes(p.pName);
+            const checked = isUnavailable ? 'checked' : '';
+            editCamperUnavailableContainer.innerHTML += `
+                <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem;">
+                    <input type="checkbox" class="camper-unavailable-cb" data-period="${p.pName}" ${checked} />
+                    ${p.pName}
+                </label>
+            `;
+        });
+
         editCamperChoicesContainer.innerHTML = '';
         const electiveNames = Array.from(electivesMap.keys()).sort();
 
@@ -1609,12 +1633,30 @@ function saveCamperEdits() {
         }
     });
 
+    // Read Unavailable Periods
+    const unavailableCBs = document.querySelectorAll('.camper-unavailable-cb');
+    const newUnavailable = [];
+    unavailableCBs.forEach(cb => {
+        if (cb.checked) {
+            newUnavailable.push(cb.dataset.period);
+        }
+    });
+
+    // Auto-unassign camper if they are currently assigned to an elective in newly marked unavailable periods
+    newUnavailable.forEach(pName => {
+        const currentAssignedInstId = currentEditingCamper.assigned[pName];
+        if (currentAssignedInstId) {
+            unassignCamper(currentEditingCamper.id, currentAssignedInstId);
+        }
+    });
+
     currentEditingCamper.firstName = newFirst;
     currentEditingCamper.lastName = newLast;
     currentEditingCamper.email = newEmail;
     currentEditingCamper.organization = newOrg;
     currentEditingCamper.notes = newNotes;
     currentEditingCamper.choices = newChoices;
+    currentEditingCamper.unavailablePeriods = newUnavailable;
 
     alert("Camper details saved!");
     showCamperViewMode();
@@ -1631,12 +1673,17 @@ function openCamperModal(camper) {
     const title = document.getElementById('camper-modal-title');
     title.textContent = `${camper.firstName} ${camper.lastName}`.trim() || `Camper ${camper.id}`;
 
+    const displayUnavailable = camper.unavailablePeriods && camper.unavailablePeriods.length > 0
+        ? camper.unavailablePeriods.join(', ')
+        : 'None';
+
     const info = document.getElementById('camper-modal-info');
     info.innerHTML = `
         <div><strong>ID:</strong> ${camper.id}</div>
         <div><strong>Email:</strong> ${camper.email || '-'}</div>
         <div><strong>Organization:</strong> ${camper.organization || '-'}</div>
         <div><strong>Date:</strong> ${camper.date || '-'}</div>
+        <div style="grid-column: 1 / -1;"><strong>Unavailable Periods:</strong> <span style="color:#ef4444; font-weight:600;">${displayUnavailable}</span></div>
         <div style="grid-column: 1 / -1;"><strong>Notes:</strong> ${camper.notes || '-'}</div>
     `;
 
@@ -1682,12 +1729,14 @@ function openCamperModal(camper) {
                 </tr>
             `;
         } else {
+            const isUnavailable = camper.unavailablePeriods && camper.unavailablePeriods.includes(p.pName);
+            const statusText = isUnavailable ? 'Blocked (Unavailable)' : 'Unassigned';
+            const statusColor = isUnavailable ? '#f59e0b' : '#ef4444';
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${p.pName}</strong></td>
-                    <td style="color:#ef4444">Unassigned</td>
+                    <td style="color:${statusColor}; font-weight: 500;">${statusText}</td>
                     <td>-</td>
-                </tr>
             `;
         }
     });
