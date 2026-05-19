@@ -150,6 +150,18 @@ function init() {
         toggleElectivesBtn.title = isCollapsed ? "Expand Panel" : "Collapse Panel";
     });
 
+    // Changelog Modal
+    const changelogModal = document.getElementById('changelog-modal');
+    const showChangelogBtn = document.getElementById('show-changelog-btn');
+    const closeChangelogModalBtn = document.getElementById('close-changelog-modal');
+
+    showChangelogBtn.addEventListener('click', () => {
+        changelogModal.classList.remove('hidden');
+    });
+    closeChangelogModalBtn.addEventListener('click', () => {
+        changelogModal.classList.add('hidden');
+    });
+
     guideBtn.addEventListener('click', () => guideModal.classList.remove('hidden'));
     closeGuideModalBtn.addEventListener('click', () => guideModal.classList.add('hidden'));
     dlElectivesBtn.addEventListener('click', downloadElectivesTemplate);

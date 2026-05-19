@@ -13,7 +13,7 @@
 <body>
     <header class="app-header">
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <h1>Camp Elective Sorter</h1>
+            <h1>Camp Elective Sorter V2.6</h1>
             <button id="guide-btn" class="btn-icon" style="background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; font-weight: bold; font-size: 1.1rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="Quick Start Guide">?</button>
         </div>
         <div class="header-controls">
@@ -262,8 +262,70 @@
 
                 <h3 style="margin-bottom: 0.5rem; color: #0f172a;">3. Auto-Assign Engine</h3>
                 <p>Click the <strong>Auto-Assign</strong> button to instantly generate a schedule and assign campers. The algorithm automatically respects capacities, minimum periods, and camper choices.</p>
-                <div style="background: #fef9c3; padding: 0.75rem; border-left: 4px solid #eab308; margin-top: 1rem;">
+                <div style="background: #fef9c3; padding: 0.75rem; border-left: 4px solid #eab308; margin-top: 1rem; margin-bottom: 1.5rem;">
                     <strong>Pro Tip:</strong> Any campers you manually assign <em>before</em> clicking Auto-Assign will be locked into place and the algorithm will build around them!
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid #cbd5e1; margin-bottom: 1rem;" />
+                <div style="display: flex; justify-content: flex-end;">
+                    <button id="show-changelog-btn" class="btn" style="background: #1e293b; color: white;">View Program Changelog</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Program Changelog Modal -->
+    <div id="changelog-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Program Changelog</h2>
+                <button id="close-changelog-modal" class="btn-icon">&times;</button>
+            </div>
+            <div class="modal-body" style="font-size: 0.95rem; color: #334155; line-height: 1.5; max-height: 60vh; overflow-y: auto;">
+                <div style="border-left: 4px solid #3b82f6; padding-left: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V2.6 - Camper Freedom & Sleek Workspace (Latest)</h4>
+                    <span style="font-size: 0.8rem; color: #64748b;">May 19, 2026</span>
+                    <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                        <li><strong>Unavailable Periods:</strong> Added blocked periods checkbox list on camper profiles to skip schedule placement and omit penalties.</li>
+                        <li><strong>Collapsible Panels:</strong> Added side buttons (`◂` / `▸`) to fold Camper Roster or Electives Chart to 60px with top-aligned vertical titles.</li>
+                        <li><strong>Fluid Design:</strong> Dynamic width adjusts to 100% of the canvas when one sidebar is closed.</li>
+                    </ul>
+                </div>
+                
+                <div style="border-left: 4px solid #f59e0b; padding-left: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V2.5 - Choice Constraints & Roster Warnings</h4>
+                    <span style="font-size: 0.8rem; color: #64748b;">May 19, 2026</span>
+                    <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                        <li><strong>Strict Choice Enforcement:</strong> Removed random class assignments. Campers only ever get scheduled into their choices.</li>
+                        <li><strong>Roster Warning Banner:</strong> Integrated detailed red banner alerts at the top detailing every unassigned camper.</li>
+                    </ul>
+                </div>
+
+                <div style="border-left: 4px solid #10b981; padding-left: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V2.4 - Full Project Backups</h4>
+                    <span style="font-size: 0.8rem; color: #64748b;">May 18, 2026</span>
+                    <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                        <li><strong>Save & Load Project File (JSON):</strong> Export full scheduling states (manual placements, locked cards, and raw datasets) to reload anytime.</li>
+                    </ul>
+                </div>
+
+                <div style="border-left: 4px solid #8b5cf6; padding-left: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V2.3 - Live Data Editor</h4>
+                    <span style="font-size: 0.8rem; color: #64748b;">May 17, 2026</span>
+                    <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                        <li><strong>Camper Details Editor:</strong> Edit names, emails, notes, and choices ranks directly inside the application.</li>
+                        <li><strong>Electives Config Editor:</strong> Edit capacities, min/max periods, resources, and set up course merging target rules.</li>
+                    </ul>
+                </div>
+
+                <div style="border-left: 4px solid #64748b; padding-left: 1rem; margin-bottom: 1rem;">
+                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V2.0 - Auto-Assign Scheduler</h4>
+                    <span style="font-size: 0.8rem; color: #64748b;">May 15, 2026</span>
+                    <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                        <li><strong>Kanban Drag & Drop Board:</strong> Interactive placement of campers and classes.</li>
+                        <li><strong>Simulated Annealing Optimizer:</strong> High-performance solver builds stable schedules.</li>
+                        <li><strong>Resilient CSV parsing:</strong> Case-insensitive imports and dynamic period parsing.</li>
+                    </ul>
                 </div>
             </div>
         </div>
