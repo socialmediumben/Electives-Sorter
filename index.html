@@ -13,26 +13,12 @@
 <body>
     <header class="app-header">
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <h1>Camp Elective Sorter V2.6</h1>
+            <h1>Camp Elective Sorter V2.7</h1>
             <button id="guide-btn" class="btn-icon" style="background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; font-weight: bold; font-size: 1.1rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="Quick Start Guide">?</button>
         </div>
         <div class="header-controls">
-            <div class="file-upload">
-                <label for="project-json" class="btn" style="background: #0ea5e9; color: white;">Load Project JSON</label>
-                <input type="file" id="project-json" accept=".json" />
-                <span id="project-status" class="status-badge">Waiting</span>
-            </div>
-            <div class="file-upload">
-                <label for="electives-csv" class="btn">Upload Electives CSV</label>
-                <input type="file" id="electives-csv" accept=".csv" />
-                <span id="electives-status" class="status-badge">Waiting</span>
-            </div>
-            <div class="file-upload">
-                <label for="campers-csv" class="btn">Upload Campers CSV</label>
-                <input type="file" id="campers-csv" accept=".csv" />
-                <span id="campers-status" class="status-badge">Waiting</span>
-            </div>
-            <button id="export-btn" class="btn btn-primary" disabled>Export Schedule</button>
+            <button id="import-btn" class="btn" style="background: #0ea5e9; color: white;">Import Hub</button>
+            <button id="export-btn" class="btn btn-primary" disabled>Export</button>
             <button id="auto-assign-btn" class="btn" style="background-color: #f59e0b; color: white;" disabled>Auto-Assign</button>
         </div>
     </header>
@@ -350,6 +336,47 @@
 
                 <button id="dl-export-schedule" class="btn" style="background: #8b5cf6; color: white; padding: 1rem; font-size: 1rem;">Download Logistics Schedule (CSV)</button>
                 <p style="font-size: 0.85rem; color: #64748b; margin-top: -0.5rem; margin-bottom: 0.5rem;">A flat data table with all metrics. Perfect for campus management in Excel.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Hub Modal -->
+    <div id="import-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Import / Upload Hub</h2>
+                <button id="close-import-modal" class="btn-icon">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-weight: 600; font-size: 0.95rem;">1. Project JSON Backup</span>
+                        <span id="project-status" class="status-badge" style="background-color: #f1f5f9; color: #64748b;">Waiting</span>
+                    </div>
+                    <label for="project-json" class="btn" style="background: #0ea5e9; color: white; display: block; text-align: center; padding: 0.5rem; font-size: 0.875rem; cursor: pointer;">Load Project JSON</label>
+                    <input type="file" id="project-json" accept=".json" style="display: none;" />
+                    <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.35rem;">Restore a complete past session from a saved JSON project backup.</p>
+                </div>
+
+                <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-weight: 600; font-size: 0.95rem;">2. Electives Configuration CSV</span>
+                        <span id="electives-status" class="status-badge" style="background-color: #f1f5f9; color: #64748b;">Waiting</span>
+                    </div>
+                    <label for="electives-csv" class="btn" style="display: block; text-align: center; padding: 0.5rem; font-size: 0.875rem; border-color: #cbd5e1; cursor: pointer;">Upload Electives CSV</label>
+                    <input type="file" id="electives-csv" accept=".csv" style="display: none;" />
+                    <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.35rem;">Ingest courses, periods, and capacity limitations.</p>
+                </div>
+
+                <div style="padding-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-weight: 600; font-size: 0.95rem;">3. Campers Preferences CSV</span>
+                        <span id="campers-status" class="status-badge" style="background-color: #f1f5f9; color: #64748b;">Waiting</span>
+                    </div>
+                    <label for="campers-csv" class="btn" style="display: block; text-align: center; padding: 0.5rem; font-size: 0.875rem; border-color: #cbd5e1; cursor: pointer;">Upload Campers CSV</label>
+                    <input type="file" id="campers-csv" accept=".csv" style="display: none;" />
+                    <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.35rem;">Ingest camper rosters and choices preferences ranks.</p>
+                </div>
             </div>
         </div>
     </div>

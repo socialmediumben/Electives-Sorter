@@ -61,6 +61,11 @@ const dlExportCamper = document.getElementById('dl-export-camper');
 const dlExportInstructor = document.getElementById('dl-export-instructor');
 const dlExportSchedule = document.getElementById('dl-export-schedule');
 
+// Import Hub Modal
+const importBtn = document.getElementById('import-btn');
+const importModal = document.getElementById('import-modal');
+const closeImportModalBtn = document.getElementById('close-import-modal');
+
 // Elective Edit elements
 const editElectiveBtn = document.getElementById('edit-elective-btn');
 const electiveViewContainer = document.getElementById('elective-view-container');
@@ -104,6 +109,9 @@ function init() {
     elCsvInput.addEventListener('change', handleElectiveUpload);
     camperCsvInput.addEventListener('change', handleCamperUpload);
     
+    importBtn.addEventListener('click', () => importModal.classList.remove('hidden'));
+    closeImportModalBtn.addEventListener('click', () => importModal.classList.add('hidden'));
+
     exportBtn.addEventListener('click', () => exportModal.classList.remove('hidden'));
     closeExportModalBtn.addEventListener('click', () => exportModal.classList.add('hidden'));
     dlSaveProject.addEventListener('click', saveProjectFile);
@@ -166,6 +174,13 @@ function init() {
     closeGuideModalBtn.addEventListener('click', () => guideModal.classList.add('hidden'));
     dlElectivesBtn.addEventListener('click', downloadElectivesTemplate);
     dlCampersBtn.addEventListener('click', downloadCampersTemplate);
+
+    // Close modals on clicking overlay backdrop
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-overlay')) {
+            e.target.classList.add('hidden');
+        }
+    });
 }
 
 function updateSortHeaders() {
@@ -588,7 +603,13 @@ function generateRandomSchedule(lockedInstances, lockedCamperAssignments) {
                 const choiceName = camper.choices[i];
                 if (!choiceName) continue;
 
-                const alreadyInElective = dynamicPeriods.some(otherP => camperState[camper.id][otherP.pName] === choiceName);
+                const alreadyInElective = dynamicPeriods.some(otherP => {
+                    const assignedVal = camperState[camper.id][otherP.pName];
+                    if (!assignedVal) return false;
+                    return assignedVal === choiceName || 
+                           assignedVal.split(' / ').includes(choiceName) || 
+                           choiceName.split(' / ').includes(assignedVal);
+                });
                 if (alreadyInElective) continue;
 
                 const inst = scheduleInstances.find(inst => inst.name === choiceName && inst.period === period);
@@ -1269,6 +1290,21 @@ function assignCamper(camper, inst) {
     if (!inst.isStaging && camper.assigned[period]) {
         alert(`Camper ${camper.id} is already assigned to an elective in ${period}`);
         return;
+    }
+
+    if (!inst.isStaging) {
+        const isAlreadyInThisElective = dynamicPeriods.some(p => {
+            const assignedInstId = camper.assigned[p.pName];
+            if (assignedInstId) {
+                const assignedInst = instances.find(i => i.id === assignedInstId);
+                return assignedInst && assignedInst.name === inst.name;
+            }
+            return false;
+        });
+        if (isAlreadyInThisElective) {
+            alert(`Camper ${camper.firstName} ${camper.lastName} (${camper.id}) is already assigned to ${inst.name} in another period!`);
+            return;
+        }
     }
 
     if (inst.isStaging && camper.assigned['available'] && camper.assigned['available'] !== inst.id) {
@@ -2003,6 +2039,7 @@ function handleProjectUpload(e) {
             projectStatus.textContent = 'Loaded';
             projectStatus.className = 'status-badge success';
 
+            importModal.classList.add('hidden');
             alert("Project loaded successfully!");
         } catch (err) {
             console.error(err);
