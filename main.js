@@ -104,6 +104,25 @@ let draggedType = null;
 let sortCol = 'name';
 let sortAsc = true;
 
+function toggleWarningsCollapse() {
+    const grid = document.getElementById('warnings-grid');
+    const btn = document.getElementById('toggle-warnings-grid-btn');
+    const toggleText = document.getElementById('warnings-toggle-text');
+    const headerBar = document.getElementById('warnings-header-bar');
+
+    if (grid.style.display === 'none') {
+        grid.style.display = 'grid';
+        btn.textContent = 'Minimize';
+        toggleText.textContent = '[Minimize]';
+        headerBar.style.marginBottom = '1rem';
+    } else {
+        grid.style.display = 'none';
+        btn.textContent = 'Expand';
+        toggleText.textContent = '[Expand]';
+        headerBar.style.marginBottom = '0rem';
+    }
+}
+
 // Initialization
 function init() {
     projectJsonInput.addEventListener('change', handleProjectUpload);
