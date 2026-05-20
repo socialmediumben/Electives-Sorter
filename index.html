@@ -13,7 +13,7 @@
 <body>
     <header class="app-header">
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <h1>Camp Elective Sorter V3.0</h1>
+            <h1>Camp Elective Sorter V3.1</h1>
             <button id="guide-btn" class="btn-icon" style="background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; font-weight: bold; font-size: 1.1rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="Quick Start Guide">?</button>
         </div>
         <div class="header-controls">
@@ -55,6 +55,7 @@
             <div class="panel-header">
                 <h2>Camper Roster</h2>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <button id="add-camper-btn" class="btn" style="background: #10b981; color: white; padding: 0.35rem 0.65rem; font-size: 0.75rem; font-weight: 600; border: none; border-radius: 4px; cursor: pointer;">+ Add Camper</button>
                     <input type="text" id="camper-search" placeholder="Search by ID or Choice...">
                     <button id="toggle-camper-panel" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Collapse Panel">◂</button>
                 </div>
@@ -75,7 +76,10 @@
         <section class="electives-panel" id="electives-panel">
             <div class="panel-header">
                 <h2>Electives Chart</h2>
-                <button id="toggle-electives-panel" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Collapse Panel">▸</button>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <button id="add-elective-btn" class="btn" style="background: #10b981; color: white; padding: 0.35rem 0.65rem; font-size: 0.75rem; font-weight: 600; border: none; border-radius: 4px; cursor: pointer;">+ Add Elective</button>
+                    <button id="toggle-electives-panel" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Collapse Panel">▸</button>
+                </div>
             </div>
             <div class="kanban-board" id="kanban-board">
                 <!-- Columns injected dynamically -->
@@ -121,6 +125,10 @@
                 <!-- Edit Mode Container -->
                 <div id="elective-edit-container" class="hidden" style="display: flex; flex-direction: column; gap: 1rem;">
                     <h3 style="margin-top: 0;">Edit Global Elective Config</h3>
+                    <div id="edit-el-name-group" style="display: none;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Elective Name</label>
+                        <input type="text" id="edit-el-name" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+                    </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Maximum Capacity</label>
@@ -161,9 +169,12 @@
                         <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem;">Period Availabilities</label>
                         <div id="edit-el-periods-container" style="display: flex; gap: 1rem; flex-wrap: wrap;"></div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
-                        <button id="cancel-el-edit-btn" class="btn" style="background: #e2e8f0; color: #0f172a;">Cancel</button>
-                        <button id="save-el-edit-btn" class="btn btn-primary">Save Configuration</button>
+                    <div style="display: flex; gap: 0.5rem; justify-content: space-between; margin-top: 0.5rem;">
+                        <button id="delete-elective-btn" class="btn" style="background: #ef4444; color: white;">Delete Elective</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="cancel-el-edit-btn" class="btn" style="background: #e2e8f0; color: #0f172a;">Cancel</button>
+                            <button id="save-el-edit-btn" class="btn btn-primary">Save Configuration</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -236,9 +247,12 @@
                         <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.5rem;">Edit Choice Ranking</label>
                         <div id="edit-camper-choices-container" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
-                        <button id="cancel-camper-edit-btn" class="btn" style="background: #e2e8f0; color: #0f172a;">Cancel</button>
-                        <button id="save-camper-edit-btn" class="btn btn-primary">Save Changes</button>
+                    <div style="display: flex; gap: 0.5rem; justify-content: space-between; margin-top: 0.5rem;">
+                        <button id="delete-camper-btn" class="btn" style="background: #ef4444; color: white;">Delete Camper</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="cancel-camper-edit-btn" class="btn" style="background: #e2e8f0; color: #0f172a;">Cancel</button>
+                            <button id="save-camper-edit-btn" class="btn btn-primary">Save Changes</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -290,7 +304,17 @@
             </div>
             <div class="modal-body" style="font-size: 0.95rem; color: #334155; line-height: 1.5; max-height: 60vh; overflow-y: auto;">
                 <div style="border-left: 4px solid #10b981; padding-left: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V3.0 - Actionable Diagnostics & Workspace Cleanup (Latest)</h4>
+                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V3.1 - Database Modifications & Kanban Control (Latest)</h4>
+                    <span style="font-size: 0.8rem; color: #64748b;">May 19, 2026</span>
+                    <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                        <li><strong>Unschedule Electives:</strong> Period-active elective instances can be unscheduled by clicking the &times; button on elective card headers, unassigning all enrolled campers.</li>
+                        <li><strong>Delete Campers & Electives:</strong> Added red Delete Camper and Delete Elective buttons inside edit modals with double confirmation.</li>
+                        <li><strong>Manually Create Campers & Electives:</strong> Add campers and electives manually using + Add Camper and + Add Elective buttons in the sidebar roster panels.</li>
+                    </ul>
+                </div>
+
+                <div style="border-left: 4px solid #3b82f6; padding-left: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V3.0 - Actionable Diagnostics & Workspace Cleanup</h4>
                     <span style="font-size: 0.8rem; color: #64748b;">May 19, 2026</span>
                     <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
                         <li><strong>Import Hub Consolidation:</strong> Merged three raw file upload buttons into a unified overlay modal. Renamed export to a clean "Export".</li>
