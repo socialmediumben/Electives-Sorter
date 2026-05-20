@@ -13,7 +13,7 @@
 <body>
     <header class="app-header">
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <h1>Camp Elective Sorter V3.1</h1>
+            <h1>Camp Elective Sorter V3.2</h1>
             <button id="guide-btn" class="btn-icon" style="background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; font-weight: bold; font-size: 1.1rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="Quick Start Guide">?</button>
         </div>
         <div class="header-controls">
@@ -29,6 +29,7 @@
                 ⚠️ Schedule Warnings & Actionable Suggestions <span id="warnings-toggle-text" style="font-size: 0.8rem; color: #d97706; font-weight: normal; margin-left: 0.5rem;">[Minimize]</span>
             </h3>
             <div style="display: flex; align-items: center; gap: 1rem;">
+                <button id="refresh-diagnostics-btn" onclick="refreshDiagnostics()" style="background: #3b82f6; color: white; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-weight: 500;" title="Re-evaluate the current schedule and update warnings/tips">Refresh Diagnostics</button>
                 <button id="toggle-warnings-grid-btn" onclick="toggleWarningsCollapse()" style="background: #d97706; color: white; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-weight: 500;">Minimize</button>
                 <button onclick="document.getElementById('warnings-container').style.display='none'" style="background: none; border: none; font-size: 1.5rem; color: #78350f; cursor: pointer; font-weight: bold; line-height: 1;">&times;</button>
             </div>
@@ -38,13 +39,13 @@
             <!-- Left Side: Warnings -->
             <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem; color: #991b1b;">
                 <strong style="font-size: 0.95rem; display: block; border-bottom: 1px solid #fecaca; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">Unresolved Schedule Issues</strong>
-                <ul id="warnings-list" style="margin-left: 1.25rem; font-size: 0.85rem; line-height: 1.5;"></ul>
+                <ul id="warnings-list" style="margin-left: 1.25rem; font-size: 0.85rem; line-height: 1.5; max-height: 200px; overflow-y: auto;"></ul>
             </div>
             
             <!-- Right Side: Suggestions -->
             <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 1rem; color: #065f46;">
                 <strong style="font-size: 0.95rem; display: block; border-bottom: 1px solid #a7f3d0; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">System Optimization Recommendations</strong>
-                <ul id="suggestions-list" style="margin-left: 1.25rem; font-size: 0.85rem; line-height: 1.5;"></ul>
+                <ul id="suggestions-list" style="margin-left: 1.25rem; font-size: 0.85rem; line-height: 1.5; max-height: 200px; overflow-y: auto;"></ul>
             </div>
         </div>
     </div>
@@ -304,6 +305,16 @@
             </div>
             <div class="modal-body" style="font-size: 0.95rem; color: #334155; line-height: 1.5; max-height: 60vh; overflow-y: auto;">
                 <div style="border-left: 4px solid #10b981; padding-left: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V3.2 - Diagnostics Engine Upgrades</h4>
+                    <span style="font-size: 0.8rem; color: #64748b;">May 20, 2026</span>
+                    <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                        <li><strong>Refresh Diagnostics:</strong> Added a new button to instantly evaluate the current schedule state and regenerate warnings and suggestions on demand.</li>
+                        <li><strong>Scrollable Diagnostic Lists:</strong> Constrained the height of warnings and suggestions and added scrollbars for massive datasets.</li>
+                        <li><strong>Smart Suggestions:</strong> Suggestions are now sorted by camper impact to highlight the most pressing optimizations first.</li>
+                    </ul>
+                </div>
+
+                <div style="border-left: 4px solid #3b82f6; padding-left: 1rem; margin-bottom: 1.5rem;">
                     <h4 style="margin: 0; color: #0f172a; font-size: 1.1rem;">V3.1 - Database Modifications & Kanban Control (Latest)</h4>
                     <span style="font-size: 0.8rem; color: #64748b;">May 19, 2026</span>
                     <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">

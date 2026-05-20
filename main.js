@@ -886,7 +886,7 @@ function generateRandomSchedule(lockedInstances, lockedCamperAssignments) {
 }
 
 function generateSuggestions(setup) {
-    const suggestions = [];
+    const rawSuggestions = [];
     const notSpawnedStats = {};
     const fullStats = {};
 
@@ -925,7 +925,10 @@ function generateSuggestions(setup) {
         Object.keys(notSpawnedStats[electiveName]).forEach(periodName => {
             const count = notSpawnedStats[electiveName][periodName];
             if (count >= 1) {
-                suggestions.push(`💡 Spawn an instance of <strong>${electiveName}</strong> in <strong>${periodName}</strong> (fits up to ${count} interested camper${count > 1 ? 's' : ''}).`);
+                rawSuggestions.push({
+                    text: `💡 Spawn an instance of <strong>${electiveName}</strong> in <strong>${periodName}</strong> (fits up to ${count} interested camper${count > 1 ? 's' : ''}).`,
+                    impact: count
+                });
             }
         });
     });
@@ -934,7 +937,10 @@ function generateSuggestions(setup) {
         Object.keys(fullStats[electiveName]).forEach(periodName => {
             const count = fullStats[electiveName][periodName];
             if (count >= 1) {
-                suggestions.push(`💡 Increase maximum capacity of <strong>${electiveName}</strong> in <strong>${periodName}</strong> by at least ${count} slot${count > 1 ? 's' : ''} to fit interested campers.`);
+                rawSuggestions.push({
+                    text: `💡 Increase maximum capacity of <strong>${electiveName}</strong> in <strong>${periodName}</strong> by at least ${count} slot${count > 1 ? 's' : ''} to fit interested campers.`,
+                    impact: count
+                });
             }
         });
     });
@@ -942,11 +948,26 @@ function generateSuggestions(setup) {
     setup.instances.forEach(si => {
         const elective = electivesMap.get(si.name);
         if (elective && si.campers.length < elective.minC) {
-            suggestions.push(`💡 Decrease minimum capacity constraint for <strong>${si.name}</strong> or reduce its scheduled periods to concentrate camper choices.`);
+            const impact = elective.minC - si.campers.length;
+            rawSuggestions.push({
+                text: `💡 Decrease minimum capacity constraint for <strong>${si.name}</strong> or reduce its scheduled periods to concentrate camper choices.`,
+                impact: impact
+            });
         }
     });
 
-    return [...new Set(suggestions)];
+    const uniqueMap = new Map();
+    rawSuggestions.forEach(s => {
+        if (!uniqueMap.has(s.text) || uniqueMap.get(s.text).impact < s.impact) {
+            uniqueMap.set(s.text, s);
+        }
+    });
+
+    const sortedSuggestions = Array.from(uniqueMap.values())
+        .sort((a, b) => b.impact - a.impact)
+        .map(s => s.text);
+
+    return sortedSuggestions;
 }
 
 function applySchedule(setup) {
@@ -2419,6 +2440,99 @@ function deleteCamper() {
     alert(`Camper ${fullName} has been successfully deleted.`);
     renderCampers();
     renderElectives();
+}
+
+function refreshDiagnostics() {
+    if (campersData.length === 0 || instances.length === 0) return;
+
+    let scheduleInstances = instances.filter(i => !i.isStaging).map(i => ({
+        name: i.name,
+        period: i.period,
+        campers: [...i.campers],
+        locked: true,
+        isSynthetic: i.isSynthetic || false
+    }));
+
+    let camperState = {}; 
+    campersData.forEach(c => {
+        camperState[c.id] = {};
+        dynamicPeriods.forEach(p => {
+            if (c.assigned[p.pName]) {
+                const inst = instances.find(i => i.id === c.assigned[p.pName]);
+                if (inst) camperState[c.id][p.pName] = inst.name;
+            } else {
+                camperState[c.id][p.pName] = null;
+            }
+        });
+    });
+
+    let warnings = [];
+
+    scheduleInstances.forEach(inst => {
+        const elective = electivesMap.get(inst.name);
+        if (!elective) return;
+
+        if (!inst.isSynthetic && inst.campers.length % elective.groupSize !== 0) {
+            warnings.push(`${inst.name} in ${inst.period} is not a multiple of ${elective.groupSize}.`);
+        }
+        
+        if (!inst.isSynthetic && inst.campers.length < elective.minC) {
+            warnings.push(`${inst.name} in ${inst.period} is below minimum capacity (${inst.campers.length}/${elective.minC}).`);
+        }
+    });
+
+    campersData.forEach(c => {
+        dynamicPeriods.forEach(p => {
+            if (c.unavailablePeriods && c.unavailablePeriods.includes(p.pName)) {
+                return;
+            }
+            const assignedName = camperState[c.id][p.pName];
+            if (!assignedName) {
+                const fullName = `${c.firstName} ${c.lastName}`.trim() || c.id;
+                warnings.push(`Could not assign Camper ${fullName} (${c.id}) in ${p.pName} to any of their chosen electives.`);
+            }
+        });
+    });
+
+    warnings = [...new Set(warnings)];
+
+    let setup = { instances: scheduleInstances, camperState: camperState, warnings: warnings };
+    
+    let suggestions = generateSuggestions(setup);
+
+    warningsList.innerHTML = '';
+    suggestionsList.innerHTML = '';
+
+    if (setup.warnings.length > 0) {
+        setup.warnings.forEach(w => {
+            const li = document.createElement('li');
+            li.textContent = w;
+            warningsList.appendChild(li);
+        });
+    } else {
+        warningsList.innerHTML = '<li style="color: #059669; list-style: none;">✅ No current warnings. Schedule is looking great!</li>';
+    }
+
+    if (suggestions.length > 0) {
+        suggestions.forEach(s => {
+            const li = document.createElement('li');
+            li.innerHTML = s;
+            suggestionsList.appendChild(li);
+        });
+    } else {
+        suggestionsList.innerHTML = '<li style="color: #6b7280; list-style: none;">No new recommendations at this time.</li>';
+    }
+
+    const warningsContainer = document.getElementById('warnings-container');
+    const toggleBtn = document.getElementById('toggle-warnings-grid-btn');
+    const toggleText = document.getElementById('warnings-toggle-text');
+    const warningsGrid = document.getElementById('warnings-grid');
+
+    warningsContainer.style.display = 'block';
+    warningsGrid.style.display = 'grid';
+    toggleBtn.textContent = 'Minimize';
+    toggleBtn.style.background = '#d97706';
+    toggleText.textContent = '[Minimize]';
 }
 
 function deleteElective() {
