@@ -71,6 +71,41 @@ const importBtn = document.getElementById('import-btn');
 const importModal = document.getElementById('import-modal');
 const closeImportModalBtn = document.getElementById('close-import-modal');
 
+// Column Mapping Modal
+const columnMappingModal = document.getElementById('column-mapping-modal');
+const closeMappingModalBtn = document.getElementById('close-mapping-modal');
+const cancelMappingBtn = document.getElementById('cancel-mapping-btn');
+const confirmMappingBtn = document.getElementById('confirm-mapping-btn');
+
+// Mapping State
+let pendingCsvData = null;
+let pendingCsvType = '';
+let pendingCsvHeaders = [];
+
+const CAMPER_FIELDS = [
+    { id: 'id', label: 'Camper ID', required: true, description: 'Unique identifier for the camper' },
+    { id: 'firstName', label: 'First Name', required: true, description: 'Given name of the camper' },
+    { id: 'lastName', label: 'Last Name', required: true, description: 'Family name of the camper' },
+    { id: 'email', label: 'Email', required: false, description: 'Contact email address' },
+    { id: 'organization', label: 'Organization', required: false, description: 'Group, troop, or organization name' },
+    { id: 'date', label: 'Date', required: false, description: 'Signup date/time' },
+    { id: 'notes', label: 'Notes', required: false, description: 'Medical info, allergies, or general comments' }
+];
+
+const ELECTIVE_FIELDS = [
+    { id: 'name', label: 'Elective Name', required: true, description: 'The title/name of the course' },
+    { id: 'maxC', label: 'Maximum Capacity', required: false, description: 'Maximum campers allowed (default: 99)' },
+    { id: 'minC', label: 'Minimum Capacity', required: false, description: 'Minimum campers needed (default: 0)' },
+    { id: 'maxP', label: 'Maximum Periods', required: false, description: 'Maximum periods this class can run (default: 0 = unlimited)' },
+    { id: 'minP', label: 'Minimum Periods', required: false, description: 'Minimum periods this class must run (default: 0)' },
+    { id: 'groupSize', label: 'Group Size', required: false, description: 'Size of groups required (default: 1)' },
+    { id: 'mergeTarget', label: 'Merge Target', required: false, description: 'Class to combine with if capacity is low' },
+    { id: 'supplies', label: 'Supplies', required: false, description: 'Required equipment or materials' },
+    { id: 'location', label: 'Location', required: false, description: 'Where the elective takes place' },
+    { id: 'instructor', label: 'Instructor', required: false, description: 'Name of the instructor' },
+    { id: 'notes', label: 'Notes', required: false, description: 'Additional instructions or prerequisites' }
+];
+
 // Elective Edit elements
 const editElectiveBtn = document.getElementById('edit-elective-btn');
 const electiveViewContainer = document.getElementById('elective-view-container');
@@ -144,6 +179,20 @@ function init() {
     
     importBtn.addEventListener('click', () => importModal.classList.remove('hidden'));
     closeImportModalBtn.addEventListener('click', () => importModal.classList.add('hidden'));
+
+    closeMappingModalBtn.addEventListener('click', () => {
+        columnMappingModal.classList.add('hidden');
+        pendingCsvData = null;
+        pendingCsvHeaders = [];
+        pendingCsvType = '';
+    });
+    cancelMappingBtn.addEventListener('click', () => {
+        columnMappingModal.classList.add('hidden');
+        pendingCsvData = null;
+        pendingCsvHeaders = [];
+        pendingCsvType = '';
+    });
+    confirmMappingBtn.addEventListener('click', applyColumnMapping);
 
     exportBtn.addEventListener('click', () => exportModal.classList.remove('hidden'));
     closeExportModalBtn.addEventListener('click', () => exportModal.classList.add('hidden'));
@@ -277,24 +326,23 @@ function handleElectiveUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (rawElectives.length > 0) {
+        if (!confirm("Uploading a new electives list will clear all current assignments and instances. Proceed?")) {
+            e.target.value = '';
+            return;
+        }
+    }
+
     Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-            rawElectives = results.data;
-            
-            dynamicPeriods = [];
-            results.meta.fields.forEach(field => {
-                if (field.toLowerCase().includes('available period')) {
-                    const pName = field.replace(/available /i, '').trim();
-                    dynamicPeriods.push({ field, pName });
-                }
-            });
-
-            processElectives(rawElectives);
-            elStatus.textContent = 'Loaded';
-            elStatus.className = 'status-badge success';
-            checkReady();
+            if (!results.meta || !results.meta.fields || results.meta.fields.length === 0) {
+                alert("Could not detect any columns in the CSV. Please check the file formatting.");
+                return;
+            }
+            showColumnMappingModal(results.meta.fields, results.data, 'electives');
+            e.target.value = '';
         }
     });
 }
@@ -303,20 +351,313 @@ function handleCamperUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (rawCampers.length > 0) {
+        if (!confirm("Uploading a new campers list will overwrite current campers. Proceed?")) {
+            e.target.value = '';
+            return;
+        }
+    }
+
     Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-            rawCampers = results.data;
-            dynamicChoiceCols = results.meta.fields.filter(field => field.toLowerCase().includes('choice'));
-            
-            processCampers(rawCampers);
-            
-            camperStatus.textContent = 'Loaded';
-            camperStatus.className = 'status-badge success';
-            checkReady();
+            if (!results.meta || !results.meta.fields || results.meta.fields.length === 0) {
+                alert("Could not detect any columns in the CSV. Please check the file formatting.");
+                return;
+            }
+            showColumnMappingModal(results.meta.fields, results.data, 'campers');
+            e.target.value = '';
         }
     });
+}
+
+function findBestHeaderMatch(fieldName, headers) {
+    const fn = fieldName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let bestMatch = '';
+    
+    // Check exact or subset matches
+    for (let header of headers) {
+        const h = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (h === fn || h.includes(fn) || fn.includes(h)) {
+            bestMatch = header;
+            break;
+        }
+    }
+    
+    // If no match found, check common synonyms
+    if (!bestMatch) {
+        const synonyms = {
+            id: ['camper id', 'student id', 'camperid', 'studentid', 'number', 'no', 'uid'],
+            firstName: ['first name', 'first', 'fname', 'given name'],
+            lastName: ['last name', 'last', 'lname', 'surname', 'family name'],
+            email: ['email address', 'email', 'mail'],
+            organization: ['org', 'troop', 'group', 'club', 'team', 'school', 'organization'],
+            date: ['date', 'signup date', 'timestamp', 'time'],
+            notes: ['notes', 'comments', 'comment', 'remarks', 'medical', 'allergies'],
+            name: ['elective name', 'elective', 'class', 'course', 'activity', 'name'],
+            maxC: ['maximum capacity', 'max capacity', 'capacity', 'max campers', 'maximum campers', 'max size', 'limit', 'max'],
+            minC: ['minimum capacity', 'min capacity', 'min campers', 'minimum campers', 'min size', 'min'],
+            maxP: ['maximum periods', 'max periods', 'periods', 'maxperiods'],
+            minP: ['minimum periods', 'min periods', 'minperiods'],
+            groupSize: ['group size', 'group', 'size', 'groupsize'],
+            mergeTarget: ['merge', 'merge target', 'mergetarget', 'combine'],
+            supplies: ['supplies', 'materials', 'equipment', 'gear'],
+            location: ['location', 'room', 'field', 'court', 'spot', 'place'],
+            instructor: ['instructor', 'coach', 'teacher', 'leader', 'staff']
+        };
+        
+        const syns = synonyms[fieldName] || [];
+        for (let header of headers) {
+            const h = header.toLowerCase().trim();
+            if (syns.includes(h) || syns.some(syn => h.includes(syn) || syn.includes(h))) {
+                bestMatch = header;
+                break;
+            }
+        }
+    }
+    return bestMatch;
+}
+
+function showColumnMappingModal(headers, rawData, type) {
+    pendingCsvData = rawData;
+    pendingCsvHeaders = headers;
+    pendingCsvType = type;
+
+    const titleEl = document.getElementById('mapping-modal-title');
+    const descEl = document.getElementById('mapping-modal-desc');
+    const containerEl = document.getElementById('mapping-fields-container');
+    const extraTitleEl = document.getElementById('mapping-extra-title');
+    const checkboxesEl = document.getElementById('mapping-extra-checkboxes');
+
+    titleEl.textContent = type === 'campers' ? 'Map Campers CSV Columns' : 'Map Electives CSV Columns';
+    descEl.textContent = `Align the columns from your uploaded CSV with the ${type === 'campers' ? 'camper' : 'elective'} fields used in the app.`;
+
+    const fields = type === 'campers' ? CAMPER_FIELDS : ELECTIVE_FIELDS;
+    containerEl.innerHTML = '';
+
+    fields.forEach(field => {
+        const row = document.createElement('div');
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '1.2fr 1.8fr';
+        row.style.alignItems = 'center';
+        row.style.gap = '1rem';
+        row.style.padding = '0.5rem 0';
+        row.style.borderBottom = '1px solid #f1f5f9';
+
+        const label = document.createElement('label');
+        label.style.fontWeight = '600';
+        label.style.fontSize = '0.9rem';
+        label.style.color = '#334155';
+        label.innerHTML = `${field.label} ${field.required ? '<span style="color:#ef4444;">*</span>' : ''}`;
+        
+        const descDiv = document.createElement('span');
+        descDiv.style.display = 'block';
+        descDiv.style.fontSize = '0.75rem';
+        descDiv.style.fontWeight = '400';
+        descDiv.style.color = '#64748b';
+        descDiv.style.marginTop = '0.15rem';
+        descDiv.textContent = field.description;
+        label.appendChild(descDiv);
+
+        const select = document.createElement('select');
+        select.className = 'mapping-select';
+        select.dataset.fieldId = field.id;
+        select.style.width = '100%';
+        select.style.padding = '0.4rem 0.5rem';
+        select.style.borderRadius = 'var(--radius-md)';
+        select.style.border = '1px solid var(--border-color)';
+        select.style.fontSize = '0.875rem';
+        select.style.background = 'white';
+        select.style.cursor = 'pointer';
+
+        let optionsHtml = `<option value="">-- Do Not Map --</option>`;
+        headers.forEach(h => {
+            optionsHtml += `<option value="${h}">${h}</option>`;
+        });
+        select.innerHTML = optionsHtml;
+
+        const bestMatch = findBestHeaderMatch(field.id, headers);
+        if (bestMatch) {
+            select.value = bestMatch;
+        }
+
+        select.addEventListener('change', updateExtraCheckboxes);
+
+        row.appendChild(label);
+        row.appendChild(select);
+        containerEl.appendChild(row);
+    });
+
+    if (type === 'campers') {
+        extraTitleEl.textContent = 'Which columns represent Elective Choice preferences?';
+    } else {
+        extraTitleEl.textContent = 'Which columns represent Available Periods?';
+    }
+
+    checkboxesEl.innerHTML = '';
+    headers.forEach(header => {
+        const wrapper = document.createElement('label');
+        wrapper.style.display = 'flex';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.gap = '0.5rem';
+        wrapper.style.fontSize = '0.85rem';
+        wrapper.style.fontWeight = '500';
+        wrapper.style.cursor = 'pointer';
+        wrapper.style.padding = '0.25rem';
+        wrapper.style.borderRadius = '4px';
+        wrapper.style.transition = 'background-color 0.1s';
+        wrapper.className = 'checkbox-wrapper-label';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'mapping-checkbox-item';
+        checkbox.dataset.header = header;
+        checkbox.style.cursor = 'pointer';
+
+        const text = document.createElement('span');
+        text.textContent = header;
+        text.style.overflow = 'hidden';
+        text.style.textOverflow = 'ellipsis';
+        text.style.whiteSpace = 'nowrap';
+
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(text);
+        checkboxesEl.appendChild(wrapper);
+    });
+
+    updateExtraCheckboxes();
+
+    columnMappingModal.classList.remove('hidden');
+    importModal.classList.add('hidden');
+}
+
+function updateExtraCheckboxes() {
+    const mappedHeaders = new Set();
+    document.querySelectorAll('.mapping-select').forEach(select => {
+        if (select.value) {
+            mappedHeaders.add(select.value);
+        }
+    });
+
+    document.querySelectorAll('.mapping-checkbox-item').forEach(checkbox => {
+        const header = checkbox.dataset.header;
+        if (mappedHeaders.has(header)) {
+            checkbox.checked = false;
+            checkbox.disabled = true;
+            checkbox.parentElement.style.opacity = '0.4';
+            checkbox.parentElement.style.pointerEvents = 'none';
+        } else {
+            checkbox.disabled = false;
+            checkbox.parentElement.style.opacity = '1';
+            checkbox.parentElement.style.pointerEvents = 'auto';
+
+            if (pendingCsvType === 'campers') {
+                const lower = header.toLowerCase();
+                const standardKeys = ['id', 'first', 'last', 'name', 'email', 'troop', 'group', 'organization', 'org', 'date', 'notes', 'timestamp', 'phone'];
+                const isProbablyStandard = standardKeys.some(key => lower.includes(key));
+                checkbox.checked = !isProbablyStandard;
+            } else {
+                const lower = header.toLowerCase();
+                checkbox.checked = lower.includes('period') || lower.includes('available');
+            }
+        }
+    });
+}
+
+function applyColumnMapping() {
+    const fields = pendingCsvType === 'campers' ? CAMPER_FIELDS : ELECTIVE_FIELDS;
+    const mapping = {};
+    let missingRequired = false;
+
+    document.querySelectorAll('.mapping-select').forEach(select => {
+        const fieldId = select.dataset.fieldId;
+        const csvCol = select.value;
+        const fieldConf = fields.find(f => f.id === fieldId);
+
+        if (fieldConf.required && !csvCol) {
+            alert(`The required field "${fieldConf.label}" must be mapped to a column in your CSV.`);
+            missingRequired = true;
+            return;
+        }
+        mapping[fieldId] = csvCol;
+    });
+
+    if (missingRequired) return;
+
+    const selectedCols = [];
+    document.querySelectorAll('.mapping-checkbox-item').forEach(checkbox => {
+        if (checkbox.checked) {
+            selectedCols.push(checkbox.dataset.header);
+        }
+    });
+
+    const mappedData = pendingCsvData.map(rawRow => {
+        if (pendingCsvType === 'campers') {
+            const mappedRow = {
+                'id': rawRow[mapping['id']] || '',
+                'first name': rawRow[mapping['firstName']] || '',
+                'last name': rawRow[mapping['lastName']] || '',
+                'email': rawRow[mapping['email']] || '',
+                'organization': rawRow[mapping['organization']] || '',
+                'date': rawRow[mapping['date']] || '',
+                'notes': rawRow[mapping['notes']] || ''
+            };
+            selectedCols.forEach(col => {
+                mappedRow[col] = rawRow[col];
+            });
+            return mappedRow;
+        } else {
+            const mappedRow = {
+                'elective name': rawRow[mapping['name']] || '',
+                'maximum capacity': rawRow[mapping['maxC']] || '',
+                'minimum capacity': rawRow[mapping['minC']] || '',
+                'maximum periods': rawRow[mapping['maxP']] || '',
+                'minimum periods': rawRow[mapping['minP']] || '',
+                'group size': rawRow[mapping['groupSize']] || '',
+                'merge': rawRow[mapping['mergeTarget']] || '',
+                'notes': rawRow[mapping['notes']] || '',
+                'supplies': rawRow[mapping['supplies']] || '',
+                'location': rawRow[mapping['location']] || '',
+                'instructor': rawRow[mapping['instructor']] || ''
+            };
+
+            selectedCols.forEach(col => {
+                const pName = col.replace(/available\s*period/i, '').replace(/available/i, '').replace(/period/i, '').trim();
+                mappedRow[`Available ${pName}`] = rawRow[col] || '';
+            });
+
+            return mappedRow;
+        }
+    });
+
+    if (pendingCsvType === 'campers') {
+        rawCampers = mappedData;
+        dynamicChoiceCols = selectedCols;
+        processCampers(rawCampers);
+
+        camperStatus.textContent = 'Loaded';
+        camperStatus.className = 'status-badge success';
+    } else {
+        rawElectives = mappedData;
+        
+        dynamicPeriods = selectedCols.map(col => {
+            const pName = col.replace(/available\s*period/i, '').replace(/available/i, '').replace(/period/i, '').trim();
+            return { field: `Available ${pName}`, pName: pName };
+        });
+
+        processElectives(rawElectives);
+
+        elStatus.textContent = 'Loaded';
+        elStatus.className = 'status-badge success';
+    }
+
+    checkReady();
+    columnMappingModal.classList.add('hidden');
+
+    pendingCsvData = null;
+    pendingCsvHeaders = [];
+    pendingCsvType = '';
 }
 
 function buildCamperTableHeaders() {
