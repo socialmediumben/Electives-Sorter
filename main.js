@@ -2142,23 +2142,105 @@ function openCamperModal(camper) {
                 <tr>
                     <td><strong>${p.pName}</strong></td>
                     <td>${inst.name}</td>
-                    <td>${rankText}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span>${rankText}</span>
+                            <button onclick="unassignCamperFromModal('${camper.id}', '${p.pName}')" class="btn" style="background: #ef4444; color: white; padding: 0.15rem 0.4rem; font-size: 0.7rem; border-radius: 4px;">Remove</button>
+                        </div>
+                    </td>
                 </tr>
             `;
         } else {
             const isUnavailable = camper.unavailablePeriods && camper.unavailablePeriods.includes(p.pName);
-            const statusText = isUnavailable ? 'Blocked (Unavailable)' : 'Unassigned';
-            const statusColor = isUnavailable ? '#f59e0b' : '#ef4444';
-            tbody.innerHTML += `
-                <tr>
-                    <td><strong>${p.pName}</strong></td>
-                    <td style="color:${statusColor}; font-weight: 500;">${statusText}</td>
-                    <td>-</td>
-            `;
+            if (isUnavailable) {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${p.pName}</strong></td>
+                        <td style="color:#f59e0b; font-weight: 500;">Blocked (Unavailable)</td>
+                        <td>-</td>
+                    </tr>
+                `;
+            } else {
+                const activeInPeriod = instances.filter(i => !i.isStaging && i.period === p.pName);
+                
+                activeInPeriod.sort((a, b) => {
+                    let aRank = camper.choices.indexOf(a.name);
+                    let bRank = camper.choices.indexOf(b.name);
+                    if (aRank === -1) aRank = 999;
+                    if (bRank === -1) bRank = 999;
+                    
+                    if (aRank !== bRank) return aRank - bRank;
+                    return a.name.localeCompare(b.name);
+                });
+
+                let options = `<option value="">-- Assign Class --</option>`;
+                activeInPeriod.forEach(inst => {
+                    const elective = electivesMap.get(inst.name);
+                    const isFull = inst.campers.length >= elective.maxC;
+                    const rank = camper.choices.indexOf(inst.name) + 1;
+                    let rankLabel = rank > 0 ? ` (Choice ${rank})` : '';
+                    let capacityLabel = ` [${inst.campers.length}/${elective.maxC}]`;
+                    let disabled = isFull ? 'disabled' : '';
+                    let fullText = isFull ? ' (FULL)' : '';
+                    
+                    options += `<option value="${inst.id}" ${disabled}>${inst.name}${rankLabel}${capacityLabel}${fullText}</option>`;
+                });
+
+                let assignDropdownHTML = `
+                    <select class="camper-assign-select" onchange="assignCamperFromModal('${camper.id}', '${p.pName}', this.value)" style="width: 100%; padding: 0.25rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem; cursor: pointer;">
+                        ${options}
+                    </select>
+                `;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${p.pName}</strong></td>
+                        <td>${assignDropdownHTML}</td>
+                        <td>-</td>
+                    </tr>
+                `;
+            }
         }
     });
 
     camperModal.classList.remove('hidden');
+}
+
+function assignCamperFromModal(camperId, periodName, instanceId) {
+    if (!instanceId) return;
+
+    const camper = campersData.find(c => c.id === camperId);
+    const inst = instances.find(i => i.id === instanceId);
+    const elective = electivesMap.get(inst.name);
+
+    if (inst.campers.length >= elective.maxC) {
+        alert('This elective is full!');
+        return;
+    }
+
+    camper.assigned[periodName] = instanceId;
+    inst.campers.push(camperId);
+
+    renderElectives();
+    renderCampers();
+    openCamperModal(camper);
+}
+
+function unassignCamperFromModal(camperId, periodName) {
+    const camper = campersData.find(c => c.id === camperId);
+    const instanceId = camper.assigned[periodName];
+    
+    if (instanceId) {
+        const inst = instances.find(i => i.id === instanceId);
+        if (inst) {
+            inst.campers = inst.campers.filter(cid => cid !== camperId);
+        }
+        camper.assigned[periodName] = null;
+
+        renderElectives();
+        renderCampers();
+        openCamperModal(camper);
+    }
 }
 
 // Exports
