@@ -114,6 +114,8 @@ const editElMaxC = document.getElementById('edit-el-max-c');
 const editElMinC = document.getElementById('edit-el-min-c');
 const editElGroupSize = document.getElementById('edit-el-group-size');
 const editElMergeTarget = document.getElementById('edit-el-merge-target');
+const editElMaxP = document.getElementById('edit-el-max-p');
+const editElMinP = document.getElementById('edit-el-min-p');
 const editElInstructor = document.getElementById('edit-el-instructor');
 const editElLocation = document.getElementById('edit-el-location');
 const editElSupplies = document.getElementById('edit-el-supplies');
@@ -1882,6 +1884,8 @@ function toggleElectiveEditMode() {
         editElMaxC.value = elective.maxC;
         editElMinC.value = elective.minC;
         editElGroupSize.value = elective.groupSize;
+        editElMaxP.value = elective.maxP !== undefined ? elective.maxP : 3;
+        editElMinP.value = elective.minP !== undefined ? elective.minP : 1;
         editElInstructor.value = elective.resources['Instructor'] || '';
         editElLocation.value = elective.resources['Location'] || '';
         editElSupplies.value = elective.resources['Supplies'] || '';
@@ -1924,6 +1928,8 @@ function openNewElectiveModal() {
     editElMaxC.value = 12;
     editElMinC.value = 4;
     editElGroupSize.value = 1;
+    editElMaxP.value = 3;
+    editElMinP.value = 1;
     editElInstructor.value = '';
     editElLocation.value = '';
     editElSupplies.value = '';
@@ -1973,6 +1979,8 @@ function saveElectiveEdits() {
 
     const newMaxC = parseInt(editElMaxC.value) || 99;
     const newMinC = parseInt(editElMinC.value) || 0;
+    const newMaxP = parseInt(editElMaxP.value) || 0;
+    const newMinP = parseInt(editElMinP.value) || 0;
     const newGroupSize = parseInt(editElGroupSize.value) || 1;
     const newMergeTarget = editElMergeTarget.value;
     const newInstructor = editElInstructor.value.trim();
@@ -2019,8 +2027,8 @@ function saveElectiveEdits() {
         elective = {
             maxC: newMaxC,
             minC: newMinC,
-            minP: 1,
-            maxP: 3,
+            minP: newMinP,
+            maxP: newMaxP,
             groupSize: newGroupSize,
             mergeTarget: newMergeTarget,
             notes: newNotes,
@@ -2029,22 +2037,23 @@ function saveElectiveEdits() {
         };
         electivesMap.set(electiveName, elective);
 
-        rawElectives.push({
+        const newElRaw = {
             "Elective": electiveName,
             "Max Capacity": newMaxC,
             "Min Capacity": newMinC,
-            "Min Periods": 1,
-            "Max Periods": 3,
+            "Min Periods": newMinP,
+            "Max Periods": newMaxP,
             "Group Size": newGroupSize,
             "Merge Target": newMergeTarget,
             "Notes": newNotes,
             "Instructor": newInstructor,
             "Location": newLocation,
-            "Supplies": newSupplies,
-            "Period 1": newAvailabilities['Period 1'] ? 'y' : 'n',
-            "Period 2": newAvailabilities['Period 2'] ? 'y' : 'n',
-            "Period 3": newAvailabilities['Period 3'] ? 'y' : 'n'
+            "Supplies": newSupplies
+        };
+        dynamicPeriods.forEach(p => {
+            newElRaw[p.field] = newAvailabilities[p.pName] ? 'y' : 'n';
         });
+        rawElectives.push(newElRaw);
 
         const newStagingId = `staging-${Date.now()}`;
         instances.push({
@@ -2068,6 +2077,47 @@ function saveElectiveEdits() {
         elective.mergeTarget = newMergeTarget;
         elective.notes = newNotes;
         elective.availabilities = newAvailabilities;
+        elective.maxP = newMaxP;
+        elective.minP = newMinP;
+
+        const rawEl = rawElectives.find(el => {
+            const elName = getVal(el, ['elective name', 'elective']);
+            return elName && elName.trim().toLowerCase() === electiveName.trim().toLowerCase();
+        });
+        if (rawEl) {
+            for (let key of Object.keys(rawEl)) {
+                const lk = key.toLowerCase().trim();
+                if (lk === 'maximum capacity' || lk === 'maximum campers' || lk === 'capacity' || lk === 'max capacity' || lk === 'max') {
+                    rawEl[key] = newMaxC;
+                } else if (lk === 'minimum campers' || lk === 'minimum capacity' || lk === 'min capacity' || lk === 'min') {
+                    rawEl[key] = newMinC;
+                } else if (lk === 'maximum periods' || lk === 'max periods') {
+                    rawEl[key] = newMaxP;
+                } else if (lk === 'minimum periods' || lk === 'min periods') {
+                    rawEl[key] = newMinP;
+                } else if (lk === 'group size' || lk === 'group') {
+                    rawEl[key] = newGroupSize;
+                } else if (lk === 'merge' || lk === 'merge target') {
+                    rawEl[key] = newMergeTarget;
+                } else if (lk === 'notes') {
+                    rawEl[key] = newNotes;
+                } else if (lk === 'instructor') {
+                    rawEl[key] = newInstructor;
+                } else if (lk === 'location') {
+                    rawEl[key] = newLocation;
+                } else if (lk === 'supplies') {
+                    rawEl[key] = newSupplies;
+                }
+            }
+            dynamicPeriods.forEach(p => {
+                const pKey = Object.keys(rawEl).find(k => k.toLowerCase().trim() === p.field.toLowerCase().trim() || k.toLowerCase().trim() === p.pName.toLowerCase().trim());
+                if (pKey) {
+                    rawEl[pKey] = newAvailabilities[p.pName] ? 'y' : 'n';
+                } else {
+                    rawEl[p.field] = newAvailabilities[p.pName] ? 'y' : 'n';
+                }
+            });
+        }
         alert("Elective configuration saved!");
     }
 
